@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eureka.fullname" . }}
+  labels:
+    app: {{ include "eureka.name" . }}
+    chart: {{ include "spring-cloud-app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: eureka-server
+spec:
+  replicas: {{ .Values.eureka.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "eureka.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "eureka.name" . }}
+        release: {{ .Release.Name }}
+        component: eureka-server
+      {{- with .Values.eureka.deployment.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: single-request-reopen
+      containers:
+        - name: eureka-server
+          image: "{{ .Values.eureka.image.repository }}:{{ .Values.eureka.image.tag }}"
+          imagePullPolicy: {{ .Values.eureka.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.eureka.containerPort }}
+              protocol: TCP
+          env:
+            # Eureka Configuration - matching your eureka application-prod.yml exactly
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "eureka.configmap.name" . }}
+                  key: spring.profiles.active
+            - name: EUREKA_APPLICATION_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "eureka.configmap.name" . }}
+                  key: eureka.application.name
+            - name: EUREKA_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "eureka.configmap.name" . }}
+                  key: eureka.server.port
+            - name: EUREKA_INSTANCE_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "eureka.configmap.name" . }}
+                  key: eureka.instance.hostname
+            
+            # Secret environment variables
+            - name: JAVA_OPTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eureka.secret.name" . }}
+                  key: java.opts
+          resources:
+            {{- toYaml .Values.eureka.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10

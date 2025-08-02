@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "client.fullname" . }}
+  labels:
+    app: {{ include "client.name" . }}
+    release: {{ .Release.Name }}
+    component: client-service
+spec:
+  replicas: {{ .Values.clientService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "client.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "client.name" . }}
+        release: {{ .Release.Name }}
+        component: client-service
+    spec:
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: single-request-reopen
+      containers:
+        - name: client-service
+          image: "{{ .Values.clientService.image.repository }}:{{ .Values.clientService.image.tag }}"
+          imagePullPolicy: {{ .Values.clientService.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.clientService.containerPort }}
+              protocol: TCP
+          env:
+            # ConfigMap environment variables
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: spring.profiles.active
+            - name: CLIENT_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: client.service.port
+            - name: SPRING_APPLICATION_NAME_CLIENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: spring.application.name
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: mysql.host
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: mysql.port
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: database.name
+            - name: JPA_HIBERNATE_DDL_AUTO
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: jpa.hibernate.ddl.auto
+            - name: LOGGING_LEVEL_ORG_HIBERNATE_SQL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: logging.level.org.hibernate.sql
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: logging.level.org.springframework
+            - name: EUREKA_INSTANCE_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: eureka.host
+            - name: EUREKA_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: eureka.port
+            # Secret environment variables
+            - name: DATABASE_USERNAME_CLIENT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "client.secret.name" . }}
+                  key: database.username
+            - name: DATABASE_PASSWORD_CLIENT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "client.secret.name" . }}
+                  key: database.password
+            - name: JAVA_OPTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "client.secret.name" . }}
+                  key: java.opts
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "client.configmap.name" . }}
+                  key: eureka.client.service-url.defaultZone
+
+          resources:
+            {{- toYaml .Values.global.resources | nindent 12 }}
+        #   livenessProbe:
+        #     httpGet:
+        #       path: /actuator/health
+        #       port: http
+        #     initialDelaySeconds: 120
+        #     periodSeconds: 30
+        #     timeoutSeconds: 10
+        #     failureThreshold: 3
+        #   readinessProbe:
+        #     httpGet:
+        #       path: /actuator/health
+        #       port: http
+        #     initialDelaySeconds: 90
+        #     periodSeconds: 10
+        #     timeoutSeconds: 5
+        #     failureThreshold: 3

@@ -1,0 +1,33 @@
+{{- if .Values.eureka.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "eureka.fullname" . }}
+  labels:
+    app: {{ include "eureka.name" . }}
+    release: {{ .Release.Name }}
+    component: eureka-server
+  annotations:
+    {{- toYaml .Values.eureka.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.eureka.ingress.className }}
+  rules:
+    {{- range .Values.eureka.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "eureka.fullname" $ }}
+                port:
+                  number: {{ $.Values.eureka.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.eureka.ingress.tls }}
+  tls:
+    {{- toYaml .Values.eureka.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -1,62 +1,91 @@
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "..name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- define "spring-cloud-app.name" -}}
+{{ .Chart.Name }}
 {{- end }}
 
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "..fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- define "spring-cloud-app.fullname" -}}
+{{ .Release.Name }}-{{ .Chart.Name }}
 {{- end }}
+
+{{- define "spring-cloud-app.chart" -}}
+{{ .Chart.Name }}-{{ .Chart.Version }}
+{{- end }}
+
+{{/* Eureka specific helpers */}}
+{{- define "eureka.name" -}}
+eureka-server
+{{- end }}
+
+{{- define "eureka.fullname" -}}
+{{ .Release.Name }}-eureka-server
+{{- end }}
+
+{{- define "eureka.servicename" -}}
+{{ include "eureka.fullname" . }}
+{{- end }}
+
+{{- define "eureka.dns.fqdn" -}}
+{{ include "eureka.servicename" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- end }}
+
+{{/* Client service helpers */}}
+{{- define "client.name" -}}
+client-service
+{{- end }}
+
+{{- define "client.fullname" -}}
+{{ .Release.Name }}-client-service
+{{- end }}
+
+{{/* MySQL helpers */}}
+{{- define "mysql.name" -}}
+mysql
+{{- end }}
+
+{{- define "mysql.fullname" -}}
+{{- if .Values.mysql.enabled -}}
+{{ .Release.Name }}-mysql-primary
+{{- else -}}
+{{ .Values.mysql.external.host }}
 {{- end }}
 {{- end }}
 
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "..chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- define "mysql.servicename" -}}
+{{- if .Values.mysql.enabled -}}
+{{ include "mysql.fullname" . }}
+{{- else -}}
+{{ .Values.mysql.external.host }}
+{{- end }}
 {{- end }}
 
-{{/*
-Common labels
-*/}}
-{{- define "..labels" -}}
-helm.sh/chart: {{ include "..chart" . }}
-{{ include "..selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- define "mysql.dns.fqdn" -}}
+{{- if .Values.mysql.enabled -}}
+{{ include "mysql.servicename" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- else -}}
+{{ .Values.mysql.external.host }}
 {{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
-{{- define "..selectorLabels" -}}
-app.kubernetes.io/name: {{ include "..name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{- define "mysql.port" -}}
+{{- if .Values.mysql.enabled -}}
+{{ .Values.mysql.service.port | default "3306" }}
+{{- else -}}
+{{ .Values.mysql.external.port | default "3306" }}
+{{- end }}
 {{- end }}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "..serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "..fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{/* ConfigMap and Secret helpers */}}
+{{- define "eureka.configmap.name" -}}
+{{ include "eureka.fullname" . }}-config
 {{- end }}
+
+{{- define "eureka.secret.name" -}}
+{{ include "eureka.fullname" . }}-secrets
+{{- end }}
+
+{{- define "client.configmap.name" -}}
+{{ include "client.fullname" . }}-config
+{{- end }}
+
+{{- define "client.secret.name" -}}
+{{ include "client.fullname" . }}-secrets
 {{- end }}

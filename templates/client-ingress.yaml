@@ -1,0 +1,33 @@
+{{- if .Values.clientService.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "client.fullname" . }}
+  labels:
+    app: {{ include "client.name" . }}
+    release: {{ .Release.Name }}
+    component: client-service
+  annotations:
+    {{- toYaml .Values.clientService.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.clientService.ingress.className }}
+  rules:
+    {{- range .Values.clientService.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "client.fullname" $ }}
+                port:
+                  number: {{ $.Values.clientService.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.clientService.ingress.tls }}
+  tls:
+    {{- toYaml .Values.clientService.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}
