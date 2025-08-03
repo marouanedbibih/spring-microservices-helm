@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gateway.fullname" . }}
+  labels:
+    app: {{ include "gateway.name" . }}
+    release: {{ .Release.Name }}
+    component: gateway-service
+spec:
+  replicas: {{ .Values.gatewayService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "gateway.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "gateway.name" . }}
+        release: {{ .Release.Name }}
+        component: gateway-service
+    spec:
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: single-request-reopen
+      containers:
+        - name: gateway-service
+          image: "{{ .Values.gatewayService.image.repository }}:{{ .Values.gatewayService.image.tag }}"
+          imagePullPolicy: {{ .Values.gatewayService.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gatewayService.containerPort }}
+              protocol: TCP
+          env:
+            # Spring Configuration - matching your application-prod.yml
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: spring.profiles.active
+            - name: GATEWAY_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: gateway.service.port
+            - name: SPRING_APPLICATION_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: spring.application.name
+            
+            # CORS Configuration - matching your application-prod.yml
+            - name: GATEWAY_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: gateway.allowed.origins
+            - name: GATEWAY_ALLOWED_METHODS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: gateway.allowed.methods
+            - name: GATEWAY_ALLOWED_HEADERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: gateway.allowed.headers
+            - name: GATEWAY_CORS_MAX_AGE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: gateway.cors.max.age
+            
+            # Logging Configuration - matching your application-prod.yml
+            - name: LOGGING_LEVEL_GATEWAY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: logging.level.gateway
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: logging.level.org.springframework
+            
+            # Eureka Configuration - matching your application-prod.yml
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "gateway.configmap.name" . }}
+                  key: eureka.client.service-url.defaultZone
+            
+            # Secret environment variables
+            - name: JAVA_OPTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gateway.secret.name" . }}
+                  key: java.opts
+          resources:
+            {{- toYaml .Values.global.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

@@ -1,0 +1,33 @@
+{{- if .Values.carService.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "car.fullname" . }}
+  labels:
+    app: {{ include "car.name" . }}
+    release: {{ .Release.Name }}
+    component: car-service
+  annotations:
+    {{- toYaml .Values.carService.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.carService.ingress.className }}
+  rules:
+    {{- range .Values.carService.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "car.fullname" $ }}
+                port:
+                  number: {{ $.Values.carService.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.carService.ingress.tls }}
+  tls:
+    {{- toYaml .Values.carService.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}

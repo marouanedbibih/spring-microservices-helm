@@ -36,6 +36,24 @@ client-service
 {{ .Release.Name }}-client-service
 {{- end }}
 
+{{/* Car service helpers */}}
+{{- define "car.name" -}}
+car-service
+{{- end }}
+
+{{- define "car.fullname" -}}
+{{ .Release.Name }}-car-service
+{{- end }}
+
+{{/* Gateway service helpers */}}
+{{- define "gateway.name" -}}
+gateway-service
+{{- end }}
+
+{{- define "gateway.fullname" -}}
+{{ .Release.Name }}-gateway-service
+{{- end }}
+
 {{/* MySQL helpers */}}
 {{- define "mysql.name" -}}
 mysql
@@ -88,4 +106,20 @@ mysql
 
 {{- define "client.secret.name" -}}
 {{ include "client.fullname" . }}-secrets
+{{- end }}
+
+{{- define "car.configmap.name" -}}
+{{ include "car.fullname" . }}-config
+{{- end }}
+
+{{- define "car.secret.name" -}}
+{{ include "car.fullname" . }}-secrets
+{{- end }}
+
+{{- define "gateway.configmap.name" -}}
+{{ include "gateway.fullname" . }}-config
+{{- end }}
+
+{{- define "gateway.secret.name" -}}
+{{ include "gateway.fullname" . }}-secrets
 {{- end }}

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gateway.configmap.name" . }}
+  labels:
+    app: {{ include "gateway.name" . }}
+    release: {{ .Release.Name }}
+    component: gateway-service
+data:
+  # Spring Configuration - matching your application-prod.yml
+  spring.profiles.active: {{ .Values.gatewayService.config.springProfilesActive | quote }}
+  spring.application.name: {{ .Values.gatewayService.config.applicationName | quote }}
+  gateway.service.port: {{ .Values.gatewayService.config.gatewayServicePort | quote }}
+  
+  # CORS Configuration - matching your values.yaml structure
+  gateway.allowed.origins: {{ .Values.gatewayService.config.gatewayAllowedOrigins | quote }}
+  gateway.allowed.methods: {{ .Values.gatewayService.config.gatewayAllowedMethods | quote }}
+  gateway.allowed.headers: {{ .Values.gatewayService.config.gatewayAllowedHeaders | quote }}
+  gateway.cors.max.age: {{ .Values.gatewayService.config.gatewayCorsMaxAge | quote }}
+  
+  # Logging configuration - matching your values.yaml structure
+  logging.level.gateway: {{ .Values.gatewayService.config.loggingLevelGateway | quote }}
+  logging.level.org.springframework: {{ .Values.gatewayService.config.loggingLevelOrgSpringframework | quote }}
+  
+  # Eureka Configuration - matching your values.yaml structure
+  eureka.client.service-url.defaultZone: {{ .Values.gatewayService.config.eurekaClientServiceUrlDefaultzone | quote }}
+  
+  {{- range $key, $value := .Values.gatewayService.config.additional }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "car.fullname" . }}
+  labels:
+    app: {{ include "car.name" . }}
+    release: {{ .Release.Name }}
+    component: car-service
+spec:
+  replicas: {{ .Values.carService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "car.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "car.name" . }}
+        release: {{ .Release.Name }}
+        component: car-service
+    spec:
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: single-request-reopen
+      containers:
+        - name: car-service
+          image: "{{ .Values.carService.image.repository }}:{{ .Values.carService.image.tag }}"
+          imagePullPolicy: {{ .Values.carService.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.carService.containerPort }}
+              protocol: TCP
+          env:
+            # Spring Configuration - matching your application-prod.yml
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: spring.profiles.active
+            - name: CAR_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: car.service.port
+            - name: SPRING_APPLICATION_NAME_CAR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: spring.application.name
+            
+            # Database Configuration - matching your application-prod.yml
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: mysql.host
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: mysql.port
+            - name: DATABASE_NAME_CAR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: database.name
+            
+            # JPA Configuration - matching your application-prod.yml
+            - name: JPA_HIBERNATE_DDL_AUTO
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: jpa.hibernate.ddl.auto
+            
+            # Logging Configuration - matching your application-prod.yml
+            - name: LOGGING_LEVEL_ORG_HIBERNATE_SQL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: logging.level.org.hibernate.sql
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: logging.level.org.springframework
+            
+            # Eureka Configuration - matching your application-prod.yml
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "car.configmap.name" . }}
+                  key: eureka.client.service-url.defaultZone
+            
+            # Secret environment variables
+            - name: DATABASE_USERNAME_CAR
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "car.secret.name" . }}
+                  key: database.username
+            - name: DATABASE_PASSWORD_CAR
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "car.secret.name" . }}
+                  key: database.password
+            - name: JAVA_OPTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "car.secret.name" . }}
+                  key: java.opts
+          resources:
+            {{- toYaml .Values.global.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

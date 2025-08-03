@@ -16,7 +16,7 @@ global:
 
 eureka:
   replicaCount: 1
-  serviceName: "spring-eureka-server "
+  serviceName: "spring-eureka-server"
 
   image:
     repository: marouanedbibih/eureka
@@ -161,3 +161,129 @@ clientService:
       - secretName: client-tls
         hosts:
           - client.marouanedbibih.engineer
+
+carService:
+  replicaCount: 1
+
+  image:
+    repository: marouanedbibih/car-service
+    tag: "latest"
+    pullPolicy: Always
+
+  containerPort: 8802
+
+  # Configuration for ConfigMap
+  config:
+    springProfilesActive: "prod"
+    servicePort: "8802"
+    applicationName: "car-service"
+    database:
+      name: "app_db"
+    jpa:
+      hibernateDdlAuto: "create"
+    logging:
+      hibernateLevel: "DEBUG"
+      springLevel: "INFO"
+    additional: {}
+
+  # Secrets for sensitive data (only used when mysql.enabled=false)
+  secrets:
+    database:
+      username: "external_user"
+      password: "external_password"
+    javaOpts: "-Xms256m -Xmx512m"
+    additional: {}
+
+  service:
+    type: ClusterIP
+    port: 8802
+    targetPort: 8802
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - host: car.marouanedbibih.engineer
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: car-tls
+        hosts:
+          - car.marouanedbibih.engineer
+
+# Gateway Service Configuration
+gatewayService:
+  replicaCount: 1
+  serviceName: "spring-gateway-service"
+
+  image:
+    repository: marouanedbibih/gateway
+    tag: "latest"
+    pullPolicy: Always
+
+  containerPort: 8888
+
+  # Configuration for ConfigMap - matching your application-prod.yml
+  config:
+    springProfilesActive: "prod"
+    applicationName: "gateway-service"
+    gatewayServicePort: "8888"
+
+    # CORS Configuration - matching your application-prod.yml
+    gatewayAllowedOrigins: "http://localhost:3000,http://localhost:3001,https://car.marouanedbibih.engineer,https://web.marouanedbibih.engineer"
+    gatewayAllowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+    gatewayAllowedHeaders: "*"
+    gatewayCorsMaxAge: "3600"
+
+    # Logging Configuration - matching your application-prod.yml
+    loggingLevelGateway: "INFO"
+    loggingLevelOrgSpringframework: "INFO"
+
+    # Eureka Configuration - matching your application-prod.yml
+    eurekaClientServiceUrlDefaultzone: "http://spring-eureka-server.dev.svc.cluster.local:8761/eureka/"
+
+    additional: {}
+
+  # Secrets for sensitive data
+  secrets:
+    javaOpts: "-Xms256m -Xmx512m"
+    additional: {}
+
+  # Resources (can override global if needed)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  deployment:
+    podAnnotations: {}
+
+  service:
+    type: ClusterIP
+    port: 8888
+    targetPort: 8888
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000,http://localhost:3001,https://car.marouanedbibih.engineer,https://web.marouanedbibih.engineer"
+      nginx.ingress.kubernetes.io/cors-allow-methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+    hosts:
+      - host: gateway.marouanedbibih.engineer
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: gateway-tls
+        hosts:
+          - gateway.marouanedbibih.engineer
