@@ -30,6 +30,8 @@ This Helm chart deploys a complete Spring Cloud microservices ecosystem includin
 - **Web Frontend**: React-based user interface
 - **MySQL Database**: Persistent data storage
 
+You can see the microservices repository [here](https://github.com/marouanedbibih/spring-cloud).
+
 ## Architecture
 
 ```mermaid
@@ -107,8 +109,8 @@ graph TB
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/marouanedbibih/devops-spring-cloud.git
-   cd devops-spring-cloud/helm
+   git clone https://github.com/marouanedbibih/spring-cloud-helm.git
+   cd spring-cloud-helm
    ```
 
 2. **Review and customize values**:
@@ -504,8 +506,6 @@ templates/
 ├── car-*.yaml                  # Car service resources
 ├── client-*.yaml               # Client service resources
 ├── web-*.yaml                  # Web frontend resources
-├── ingress.yaml               # Global ingress
-└── service.yaml               # Common service template
 ```
 
 ### Testing
