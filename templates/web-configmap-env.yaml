@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "web.configmap.name" . }}-env
+  labels:
+    app: {{ include "web.name" . }}
+    release: {{ .Release.Name }}
+    component: web-app
+data:
+  env.js: |
+    window._env_ = {
+      REACT_APP_API_URL: "{{ .Values.webApp.config.apiUrl }}",
+    };

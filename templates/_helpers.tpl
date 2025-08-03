@@ -54,6 +54,15 @@ gateway-service
 {{ .Release.Name }}-gateway-service
 {{- end }}
 
+{{/* Web application helpers */}}
+{{- define "web.name" -}}
+web-app
+{{- end }}
+
+{{- define "web.fullname" -}}
+{{ .Release.Name }}-web-app
+{{- end }}
+
 {{/* MySQL helpers */}}
 {{- define "mysql.name" -}}
 mysql
@@ -122,4 +131,12 @@ mysql
 
 {{- define "gateway.secret.name" -}}
 {{ include "gateway.fullname" . }}-secrets
+{{- end }}
+
+{{- define "web.configmap.name" -}}
+{{ include "web.fullname" . }}-config
+{{- end }}
+
+{{- define "web.secret.name" -}}
+{{ include "web.fullname" . }}-secrets
 {{- end }}
