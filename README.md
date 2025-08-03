@@ -30,7 +30,7 @@ This Helm chart deploys a complete Spring Cloud microservices ecosystem includin
 - **Web Frontend**: React-based user interface
 - **MySQL Database**: Persistent data storage
 
-You can see the microservices repository [here](https://github.com/marouanedbibih/spring-cloud).
+You can see the microservices repository [here](https://github.com/marouanedbibih/spring-microservices).
 
 ## Architecture
 
